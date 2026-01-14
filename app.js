@@ -1,57 +1,15 @@
 const taskForm = document.querySelector("#task-form");
 const taskList = document.querySelector("#task-list");
-const filterTabs = document.querySelectorAll(".filter-tab");
-const countAll = document.querySelector("#count-all");
-const countPending = document.querySelector("#count-pending");
-const countDone = document.querySelector("#count-done");
-const progressText = document.querySelector("#progress-text");
-const progressFill = document.querySelector("#progress-fill");
-const taskTemplate = document.querySelector("#task-template");
-const emptyTemplate = document.querySelector("#empty-template");
+const emptyState = document.querySelector("#task-empty");
+const activeCount = document.querySelector("#active-count");
+const doneCount = document.querySelector("#done-count");
+const chips = document.querySelectorAll(".chip");
 
-const tasks = [
-  {
-    id: crypto.randomUUID(),
-    title: "Revisar documentação do projeto",
-    description: "Verificar se todas as seções estão atualizadas",
-    priority: "high",
-    date: "10 de jan. de 2024",
-    done: false,
-  },
-  {
-    id: crypto.randomUUID(),
-    title: "Responder e-mails pendentes",
-    description: "",
-    priority: "medium",
-    date: "11 de jan. de 2024",
-    done: false,
-  },
-  {
-    id: crypto.randomUUID(),
-    title: "Atualizar dependências",
-    description: "Verificar versões desatualizadas e fazer upgrade",
-    priority: "low",
-    date: "09 de jan. de 2024",
-    done: true,
-  },
-];
-
+const tasks = [];
 let activeFilter = "all";
 
-const priorityLabels = {
-  low: "Baixa",
-  medium: "Média",
-  high: "Alta",
-};
-
 const formatDate = (value) => {
-  if (!value) {
-    return "";
-  }
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
   return date.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
@@ -59,137 +17,107 @@ const formatDate = (value) => {
   });
 };
 
-const updateProgress = () => {
-  const total = tasks.length;
-  const done = tasks.filter((task) => task.done).length;
-  countAll.textContent = total;
-  countPending.textContent = total - done;
-  countDone.textContent = done;
-  progressText.textContent = `${done} de ${total} concluídas`;
-  const percent = total === 0 ? 0 : Math.round((done / total) * 100);
-  progressFill.style.width = `${percent}%`;
-};
-
-const matchesFilter = (task) => {
-  if (activeFilter === "all") {
-    return true;
-  }
-  if (activeFilter === "pending") {
-    return !task.done;
-  }
-  return task.done;
-};
-
-const createTaskCard = (task) => {
-  const fragment = taskTemplate.content.cloneNode(true);
-  const card = fragment.querySelector(".task-card");
-  const checkbox = fragment.querySelector(".task-checkbox");
-  const title = fragment.querySelector(".task-title");
-  const badge = fragment.querySelector(".priority-badge");
-  const description = fragment.querySelector(".task-description");
-  const date = fragment.querySelector(".task-date");
-  const reopenButton = fragment.querySelector(".btn-reopen");
-  const deleteButton = fragment.querySelector(".btn-delete");
-
-  card.dataset.id = task.id;
-  title.textContent = task.title;
-  badge.textContent = priorityLabels[task.priority];
-  badge.classList.add(`priority-${task.priority}`);
-  date.textContent = task.date;
-
-  if (task.description) {
-    description.textContent = task.description;
-  } else {
-    description.remove();
-  }
-
-  if (task.done) {
-    card.classList.add("completed");
-    checkbox.classList.add("checked");
-    checkbox.setAttribute("aria-label", "Reabrir tarefa");
-  } else {
-    reopenButton.remove();
-  }
-
-  checkbox.addEventListener("click", () => toggleTask(task.id));
-  if (reopenButton) {
-    reopenButton.addEventListener("click", () => toggleTask(task.id));
-  }
-  deleteButton.addEventListener("click", () => removeTask(task.id));
-
-  return fragment;
+const updateStats = () => {
+  const activeTasks = tasks.filter((task) => !task.done);
+  const doneTasks = tasks.filter((task) => task.done);
+  activeCount.textContent = activeTasks.length;
+  doneCount.textContent = doneTasks.length;
 };
 
 const renderTasks = () => {
-  taskList.innerHTML = "";
-  const visibleTasks = tasks.filter(matchesFilter);
+  const visibleTasks = tasks.filter((task) => {
+    if (activeFilter === "all") {
+      return true;
+    }
+    return task.priority === activeFilter;
+  });
 
-  if (visibleTasks.length === 0) {
-    taskList.appendChild(emptyTemplate.content.cloneNode(true));
-    updateProgress();
-    return;
+  taskList.innerHTML = "";
+
+  if (!visibleTasks.length) {
+    taskList.appendChild(emptyState);
   }
 
   visibleTasks.forEach((task) => {
-    taskList.appendChild(createTaskCard(task));
+    const card = document.createElement("article");
+    card.className = "task-card";
+
+    card.innerHTML = `
+      <div class="task-card__header">
+        <div>
+          <p class="task-card__title">${task.title}</p>
+          <p>${task.description}</p>
+        </div>
+        <span class="task-card__badge badge--${task.priority}">${task.priority}</span>
+      </div>
+      <div class="task-card__meta">
+        <span>Responsável: <strong>${task.owner}</strong></span>
+        <span>Prazo: <strong>${formatDate(task.dueDate)}</strong></span>
+      </div>
+      <div class="task-card__footer">
+        <label class="task-card__status">
+          <input type="checkbox" ${task.done ? "checked" : ""} data-id="${task.id}" />
+          ${task.done ? "Concluída" : "Em andamento"}
+        </label>
+        <span>Atualizado ${task.updatedAt}</span>
+      </div>
+    `;
+
+    taskList.appendChild(card);
   });
 
-  updateProgress();
+  updateStats();
 };
 
-const toggleTask = (id) => {
-  const task = tasks.find((item) => item.id === id);
-  if (!task) {
-    return;
-  }
-  task.done = !task.done;
-  renderTasks();
+const refreshUpdatedAt = () =>
+  new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const setActiveChip = (chip) => {
+  chips.forEach((button) => button.classList.remove("chip--active"));
+  chip.classList.add("chip--active");
 };
 
-const removeTask = (id) => {
-  const index = tasks.findIndex((task) => task.id === id);
-  if (index === -1) {
-    return;
-  }
-  tasks.splice(index, 1);
-  renderTasks();
-};
-
-const setActiveTab = (tab) => {
-  filterTabs.forEach((button) => button.classList.remove("active"));
-  tab.classList.add("active");
-};
-
-filterTabs.forEach((tab) => {
-  tab.addEventListener("click", () => {
-    activeFilter = tab.dataset.filter;
-    setActiveTab(tab);
+chips.forEach((chip) => {
+  chip.addEventListener("click", () => {
+    activeFilter = chip.dataset.filter;
+    setActiveChip(chip);
     renderTasks();
   });
 });
 
 taskForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  const formData = new FormData(taskForm);
-  const title = formData.get("title").trim();
-  const description = formData.get("description").trim();
-
-  if (!title) {
-    return;
-  }
+  const data = new FormData(taskForm);
 
   const task = {
     id: crypto.randomUUID(),
-    title,
-    description,
-    priority: formData.get("priority"),
-    date: formatDate(new Date()),
+    title: data.get("title"),
+    owner: data.get("owner"),
+    priority: data.get("priority"),
+    dueDate: data.get("dueDate"),
+    description: data.get("description"),
     done: false,
+    updatedAt: refreshUpdatedAt(),
   };
 
   tasks.unshift(task);
   taskForm.reset();
   renderTasks();
+});
+
+taskList.addEventListener("change", (event) => {
+  const checkbox = event.target;
+  if (checkbox.matches("input[type='checkbox']")) {
+    const task = tasks.find((item) => item.id === checkbox.dataset.id);
+    if (task) {
+      task.done = checkbox.checked;
+      task.updatedAt = refreshUpdatedAt();
+      renderTasks();
+    }
+  }
 });
 
 renderTasks();
