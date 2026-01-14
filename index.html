@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel de Tarefas</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="page">
+      <header class="page__header">
+        <div>
+          <p class="page__eyebrow">Painel de produtividade</p>
+          <h1>Cadastro e visualização de tarefas</h1>
+          <p class="page__subtitle">
+            Organize prioridades, acompanhe prazos e mantenha a equipe alinhada.
+          </p>
+        </div>
+        <div class="page__stats">
+          <div class="stat-card">
+            <span class="stat-card__label">Tarefas ativas</span>
+            <strong id="active-count">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card__label">Concluídas hoje</span>
+            <strong id="done-count">0</strong>
+          </div>
+        </div>
+      </header>
+
+      <main class="dashboard">
+        <section class="card">
+          <h2>Nova tarefa</h2>
+          <form id="task-form" class="task-form">
+            <label class="field">
+              Título da tarefa
+              <input
+                type="text"
+                name="title"
+                placeholder="Ex.: Revisar relatório mensal"
+                required
+              />
+            </label>
+            <label class="field">
+              Responsável
+              <input
+                type="text"
+                name="owner"
+                placeholder="Ex.: Juliana"
+                required
+              />
+            </label>
+            <label class="field">
+              Prioridade
+              <select name="priority" required>
+                <option value="Alta">Alta</option>
+                <option value="Média" selected>Média</option>
+                <option value="Baixa">Baixa</option>
+              </select>
+            </label>
+            <label class="field">
+              Prazo
+              <input type="date" name="dueDate" required />
+            </label>
+            <label class="field field--full">
+              Descrição
+              <textarea
+                name="description"
+                rows="4"
+                placeholder="Inclua detalhes importantes, links ou passos necessários."
+                required
+              ></textarea>
+            </label>
+            <button type="submit" class="btn">Salvar tarefa</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <div class="card__header">
+            <div>
+              <h2>Visão geral</h2>
+              <p class="card__subtitle">Acompanhe o andamento das tarefas cadastradas.</p>
+            </div>
+            <div class="chip-group">
+              <button class="chip chip--active" data-filter="all">Todas</button>
+              <button class="chip" data-filter="Alta">Alta prioridade</button>
+              <button class="chip" data-filter="Média">Média</button>
+              <button class="chip" data-filter="Baixa">Baixa</button>
+            </div>
+          </div>
+          <div class="task-list" id="task-list">
+            <div class="task-empty" id="task-empty">
+              <h3>Nenhuma tarefa cadastrada ainda</h3>
+              <p>Preencha o formulário ao lado para iniciar seu planejamento.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
